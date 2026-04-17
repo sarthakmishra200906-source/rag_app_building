@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from langchain_community.document_loaders import TextLoader, DirectoryLoader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -7,6 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
+
+BASE_DIR = Path(__file__).resolve().parent
 
 def load_documents(docs_path):
     print(f"Checking for documents in: {os.path.abspath(docs_path)}")
@@ -75,11 +78,11 @@ def create_vector_store(chunks, persist_directory="db/chroma_db"):
 def main():
     # This is where the function run
     #load the file
-    documents = load_documents(docs_path="docs")
+    documents = load_documents(docs_path=str(BASE_DIR / "docs"))
     #to chunk file
     chunks=split_documents(documents)
     # embedding and storing in vector db 
-    vectorstore=create_vector_store(chunks)
+    vectorstore=create_vector_store(chunks, persist_directory=str(BASE_DIR / "db/chroma_db"))
     print("\n--- Pipeline Success! ---")
     
 

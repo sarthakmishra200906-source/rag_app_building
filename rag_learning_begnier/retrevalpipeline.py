@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
@@ -28,8 +29,6 @@ def get_gemini_llm(temperature=0.3):
                 temperature=temperature,
                 google_api_key=api_key,
             )
-            # Lightweight request to validate model availability early.
-            llm.invoke("Reply with exactly: OK")
             print(f"Using Gemini model: {model_name}")
             return llm
         except ChatGoogleGenerativeAIError as error:
@@ -43,7 +42,8 @@ def get_gemini_llm(temperature=0.3):
 
 
 load_dotenv()
-persisten_directory="db/chroma_db"
+BASE_DIR = Path(__file__).resolve().parent
+persisten_directory = str(BASE_DIR / "db/chroma_db")
 # to load embedding and vector store
 embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2") 
 db=Chroma(
@@ -87,10 +87,15 @@ def answer_query(query):
     context_text = "\n\n---\n\n".join([doc.page_content for doc in relevant_docs])
     print("Generating answer from Gemini...")
     final_prompt = prompt.format(context=context_text, question=query)
-    response = llm.invoke(final_prompt)
-
-    print("\n--- GEMINI'S ANSWER ---")
-    print(response.content)
+    try:
+        response = llm.invoke(final_prompt)
+        print("\n--- GEMINI'S ANSWER ---")
+        print(response.content)
+    except ChatGoogleGenerativeAIError:
+        print("\nGemini quota/rate limit reached. Showing retrieved context instead:")
+        for i, doc in enumerate(relevant_docs, 1):
+            preview = doc.page_content.replace("\n", " ")[:200]
+            print(f"{i}. {preview}...")
 
 
 def main():
